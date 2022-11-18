@@ -1,4 +1,4 @@
-import router from './router'
+import router, { constantRoutes } from './router'
 import store from './store'
 import { Message } from 'element-ui'
 import NProgress from 'nprogress' // progress bar
@@ -32,9 +32,14 @@ router.beforeEach(async(to, from, next) => {
       } else {
         try {
           // get user info
-          await store.dispatch('user/getInfo')
-
-          next()
+          const { roles } = await store.dispatch('user/getInfo')
+          // 异步获取路由
+          const accessRoutes = await store.dispatch('permission/generateRoutes', roles)
+          // 调用router.addRoutes方法，将异步路由添加进去
+          router.options.routers = constantRoutes.concat(accessRoutes)
+          router.addRoutes(accessRoutes)
+          next({ ...to, replace: true })
+          // next()
         } catch (error) {
           // remove token and go to login page to re-login
           await store.dispatch('user/resetToken')
